@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档关键词检查工具</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ddd;
+            background-color: #f8f9fa;
+            border-radius: 5px 5px 0 0;
+            margin-bottom: -1px;
+        }
+
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 20px;
+            transition: 0.3s;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .tab button:hover {
+            background-color: #e9ecef;
+        }
+
+        .tab button.active {
+            background-color: white;
+            color: #007bff;
+            border-bottom: 3px solid #007bff;
+            font-weight: bold;
+        }
+
+        .tabcontent {
+            display: none;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            background-color: white;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"], input[type="file"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        input[type="file"] {
+            padding: 8px;
+        }
+
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        .radio-group {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background-color: #fafafa;
+        }
+
+        .radio-group label {
+            display: inline-block;
+            margin-right: 30px;
+            font-weight: normal;
+            color: #555;
+        }
+
+        input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .result-container {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+
+        .occurrences-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 20px;
+        }
+
+        .occurrence {
+            padding: 15px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-left: 3px solid #28a745;
+        }
+
+        .keyword {
+            font-weight: bold;
+            color: #dc3545;
+            font-size: 18px;
+        }
+
+        .page {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .context {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .region-level {
+            margin-bottom: 35px;
+        }
+
+        .level-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            color: #333;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .add-btn {
+            margin-left: 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .add-btn:hover {
+            background-color: #218838;
+        }
+
+        .region-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .region-item {
+            position: relative;
+            background-color: #e9ecef;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .region-item:hover {
+            background-color: #dee2e6;
+            transform: translateY(-2px);
+        }
+
+        .region-item:hover .delete-icon {
+            display: block;
+        }
+
+        .delete-icon {
+            display: none;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #dc3545;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 14px;
+            text-align: center;
+            line-height: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 25px;
+            border-radius: 8px;
+            width: 400px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close {
+            cursor: pointer;
+            font-size: 24px;
+            color: #999;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .modal input, .modal button {
+            width: 100%;
+            margin: 12px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            .tabcontent {
+                padding: 20px;
+            }
+
+            .modal-content {
+                width: 90%;
+                margin: 30% auto;
+            }
+
+            .occurrences-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>文档关键词检查工具</h1>
+
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'check')">文档检查</button>
+            <button class="tablinks" onclick="openTab(event, 'regions')">行政区划管理</button>
+        </div>
+
+        <div id="check" class="tabcontent" style="display: block;">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="file">选择文档文件 (.docx):</label>
+                    <input type="file" id="file" name="file" accept=".docx" required>
+                </div>
+
+                <div class="form-group">
+                    <label>检查类型:</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="checkType" value="china_regions" checked onchange="toggleKeywordsInput()">
+                            中国行政区划名称
+                        </label>
+                        <label>
+                            <input type="radio" name="checkType" value="custom" onchange="toggleKeywordsInput()">
+                            自定义关键词
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="keywordsGroup" style="display: none;">
+                    <label for="keywords">关键词 (用中文逗号"，"分隔):</label>
+                    <textarea id="keywords" name="keywords" placeholder="请输入关键词，用中文逗号分隔"></textarea>
+                </div>
+
+                <button type="submit">上传并检查</button>
+            </form>
+
+            <div id="result"></div>
+        </div>
+
+        <div id="regions" class="tabcontent">
+            <div class="region-level">
+                <div class="level-title">
+                    省级行政区
+                </div>
+                <div id="province-list" class="region-list"></div>
+            </div>
+
+            <div class="region-level">
+                <div class="level-title">
+                    市级行政区
+                    <button class="add-btn" onclick="showAddModal('市级')">新增</button>
+                </div>
+                <div id="city-list" class="region-list"></div>
+            </div>
+
+            <div class="region-level">
+                <div class="level-title">
+                    区级行政区
+                    <button class="add-btn" onclick="showAddModal('区级')">新增</button>
+                </div>
+                <div id="district-list" class="region-list"></div>
+            </div>
+
+            <!-- 添加区域的模态框 -->
+            <div id="add-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>添加行政区划</h3>
+                        <span class="close" onclick="closeAddModal()">&times;</span>
+                    </div>
+                    <input type="text" id="region-name" placeholder="请输入行政区划名称">
+                    <button onclick="addRegion()">添加</button>
+                </div>
+            </div>
+
+            <!-- 删除确认模态框 -->
+            <div id="delete-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>删除确认</h3>
+                        <span class="close" onclick="closeDeleteModal()">&times;</span>
+                    </div>
+                    <p>请输入密码确认删除</p>
+                    <input type="password" id="delete-password" placeholder="请输入密码">
+                    <button onclick="confirmDelete()">确认删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab切换功能
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // 切换关键词输入框显示
+        function toggleKeywordsInput() {
+            const customRadio = document.querySelector('input[name="checkType"][value="custom"]');
+            const keywordsGroup = document.getElementById('keywordsGroup');
+            keywordsGroup.style.display = customRadio.checked ? 'block' : 'none';
+        }
+
+        // 表单提交处理
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>正在处理文件，请稍候...</p>';
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    resultDiv.innerHTML = `<div class="error">错误: ${data.message}</div>`;
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `<div class="error">请求失败: ${error.message}</div>`;
+            });
+        });
+
+        // 显示检查结果
+        function displayResults(data) {
+            const resultDiv = document.getElementById('result');
+
+            if (data.occurrences.length === 0) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>检查完成</h3>
+                        <p>文件 "${data.filename}" 中未发现匹配的关键词。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 过滤掉"省级"、"市级"、"区级"这三个关键词
+            const filteredOccurrences = data.occurrences.filter(occurrence =>
+                !["省级", "市级", "区级"].includes(occurrence.keyword)
+            );
+
+            if (filteredOccurrences.length === 0) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>检查完成</h3>
+                        <p>文件 "${data.filename}" 中未发现匹配的关键词。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="success">
+                    <h3>检查完成</h3>
+                    <div class="stats">
+                        <span>文件: ${data.filename}</span>
+                        <span>匹配项: ${filteredOccurrences.length} 个</span>
+                    </div>
+                    <p>在文件中找到以下匹配项：</p>
+                </div>
+                <div class="result-container">
+                    <div class="occurrences-grid">
+            `;
+
+            filteredOccurrences.forEach(occurrence => {
+                html += `
+                    <div class="occurrence">
+                        <p><span class="keyword">${occurrence.keyword}</span></p>
+                        <p><span class="page">页码: ${occurrence.page}</span></p>
+                        <p class="context">${occurrence.context}</p>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+            resultDiv.innerHTML = html;
+        }
+
+        // 行政区划管理相关JavaScript代码
+        let currentLevel = '';
+        let currentRegionName = '';
+        let allRegions = []; // 存储所有行政区划名称
+
+        // 页面加载时获取行政区划数据
+        window.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/regions/structured')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderRegions(data.regions);
+                        // 将所有行政区划名称存储到allRegions数组中
+                        allRegions = [];
+                        Object.values(data.regions).forEach(levelRegions => {
+                            if (Array.isArray(levelRegions)) {
+                                allRegions = allRegions.concat(levelRegions);
+                            }
+                        });
+                    }
+                });
+        });
+
+        // 渲染行政区划
+        function renderRegions(regions) {
+            renderRegionList('province-list', '省级', regions['省级'] || []);
+            renderRegionList('city-list', '市级', regions['市级'] || []);
+            renderRegionList('district-list', '区级', regions['区级'] || []);
+        }
+
+        // 渲染单个级别的行政区划列表
+        function renderRegionList(containerId, level, regionList) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            regionList.forEach(region => {
+                const regionElement = document.createElement('div');
+                regionElement.className = 'region-item';
+                regionElement.innerHTML = `
+                    ${region}
+                    <span class="delete-icon" onclick="showDeleteModal('${level}', '${region}')">×</span>
+                `;
+                container.appendChild(regionElement);
+            });
+        }
+
+        // 显示添加模态框
+        function showAddModal(level) {
+            currentLevel = level;
+            document.getElementById('add-modal').style.display = 'block';
+            document.getElementById('region-name').value = '';
+        }
+
+        // 关闭添加模态框
+        function closeAddModal() {
+            document.getElementById('add-modal').style.display = 'none';
+        }
+
+        // 添加行政区划
+        function addRegion() {
+            const name = document.getElementById('region-name').value.trim();
+            if (!name) {
+                alert('请输入行政区划名称');
+                return;
+            }
+
+            // 检查名称是否已存在（在整个行政区划列表中检查）
+            if (allRegions.includes(name)) {
+                alert('该行政区划名称已存在');
+                return;
+            }
+
+            fetch(`/api/regions/${currentLevel}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({name: name})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeAddModal();
+                    // 重新加载数据，但保持在当前标签页
+                    fetch('/api/regions/structured')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                renderRegions(data.regions);
+                                // 更新allRegions数组
+                                allRegions = [];
+                                Object.values(data.regions).forEach(levelRegions => {
+                                    if (Array.isArray(levelRegions)) {
+                                        allRegions = allRegions.concat(levelRegions);
+                                    }
+                                });
+                                // 显示成功消息
+                                alert('行政区划添加成功');
+                            }
+                        });
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+
+        // 显示删除模态框
+        function showDeleteModal(level, name) {
+            currentLevel = level;
+            currentRegionName = name;
+            document.getElementById('delete-modal').style.display = 'block';
+            document.getElementById('delete-password').value = '';
+        }
+
+        // 关闭删除模态框
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').style.display = 'none';
+        }
+
+        // 确认删除
+        function confirmDelete() {
+            const password = document.getElementById('delete-password').value;
+            if (!password) {
+                alert('请输入密码');
+                return;
+            }
+
+            fetch(`/api/regions/${currentLevel}/${currentRegionName}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({password: password})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeDeleteModal();
+                    // 重新加载数据，但保持在当前标签页
+                    fetch('/api/regions/structured')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                renderRegions(data.regions);
+                                // 更新allRegions数组
+                                allRegions = [];
+                                Object.values(data.regions).forEach(levelRegions => {
+                                    if (Array.isArray(levelRegions)) {
+                                        allRegions = allRegions.concat(levelRegions);
+                                    }
+                                });
+                                // 显示成功消息
+                                alert('行政区划删除成功');
+                            }
+                        });
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const addModal = document.getElementById('add-modal');
+            const deleteModal = document.getElementById('delete-modal');
+
+            if (event.target === addModal) {
+                closeAddModal();
+            }
+
+            if (event.target === deleteModal) {
+                closeDeleteModal();
+            }
+        };
+    </script>
+</body>
+</html>
