@@ -3,7 +3,6 @@ from flask import Flask, render_template, request, jsonify
 import os
 from werkzeug.utils import secure_filename
 from docx import Document
-import io
 import tempfile
 import json
 import uuid
