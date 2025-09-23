@@ -76,7 +76,7 @@ def allowed_file(filename):
 
         # 获取文件扩展名
         parts = filename.rsplit('.', 1)
-        print(parts)
+        # print(parts)
         app.logger.info(f"Filename parts: {parts}")
 
         if len(parts) != 2:
@@ -495,4 +495,4 @@ def delete_region(region):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)  # 生产环境中请设置 debug=False
+    app.run(debug=True, port=5003)#生产环境中请设置 debug=False
