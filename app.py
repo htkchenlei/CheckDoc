@@ -1,11 +1,12 @@
 # app.py
 from flask import Flask, render_template, request, jsonify
 import os
-from werkzeug.utils import secure_filename
-from docx import Document
+import re
 import tempfile
 import json
 import uuid
+from werkzeug.utils import secure_filename as werkzeug_secure_filename
+from docx import Document
 
 # --- 配置 ---
 UPLOAD_FOLDER = 'uploads'
@@ -20,6 +21,42 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # 确保上传文件夹存在
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+def secure_filename(filename):
+    """
+    改进的secure_filename函数，支持中文文件名
+    """
+    # 如果文件名包含中文，我们采用不同的处理方式
+    if re.search(r'[\u4e00-\u9fff]', filename):
+        # 保留中文字符，但移除危险字符
+        # 只保留字母、数字、中文、点号、下划线和连字符
+        safe_name = re.sub(r'[^\w\u4e00-\u9fff.-]', '', filename)
+        if not safe_name:
+            # 如果过滤后为空，使用默认名称
+            safe_name = 'upload'
+
+        # 确保文件扩展名被保留
+        if '.' in filename:
+            parts = filename.rsplit('.', 1)
+            if len(parts) == 2:
+                extension = parts[1]
+                # 清理扩展名中的非法字符
+                clean_extension = re.sub(r'[^\w]', '', extension)
+                if clean_extension:
+                    # 如果安全名称中已有扩展名，先移除它
+                    if '.' in safe_name:
+                        safe_name = safe_name.rsplit('.', 1)[0]
+                    safe_name = f"{safe_name}.{clean_extension}"
+                else:
+                    # 如果没有有效的扩展名，添加默认的
+                    if '.' not in safe_name:
+                        safe_name = f"{safe_name}.docx"
+    else:
+        # 对于非中文文件名，使用原始的secure_filename函数
+        safe_name = werkzeug_secure_filename(filename)
+
+    return safe_name
 
 
 def allowed_file(filename):
@@ -339,7 +376,10 @@ def upload_file():
 
     # 检查文件类型和保存
     if file and allowed_file(file.filename):
+        # 使用改进的secure_filename函数
         filename = secure_filename(file.filename)
+        app.logger.info(f"Original filename: {file.filename}, Secure filename: {filename}")
+
         # 使用临时文件处理，避免磁盘写入
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1])
         file.save(temp_file.name)
