@@ -76,7 +76,7 @@ def allowed_file(filename):
 
         # 获取文件扩展名
         parts = filename.rsplit('.', 1)
-        print(parts)
+        # print(parts)
         app.logger.info(f"Filename parts: {parts}")
 
         if len(parts) != 2:

@@ -138,6 +138,29 @@
             border-left: 4px solid #007bff;
         }
 
+        .summary-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e9f7ef;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+        }
+
+        .summary-item {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .summary-item:hover {
+            background-color: #0056b3;
+        }
+
         .occurrences-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
@@ -385,6 +408,7 @@
             <div class="region-level">
                 <div class="level-title">
                     省级行政区
+                    <button class="add-btn" onclick="showAddModal('省级')">新增</button>
                 </div>
                 <div id="province-list" class="region-list"></div>
             </div>
@@ -509,6 +533,31 @@
                 return;
             }
 
+            // 按关键词分组统计
+            const keywordStats = {};
+            filteredOccurrences.forEach(occurrence => {
+                if (!keywordStats[occurrence.keyword]) {
+                    keywordStats[occurrence.keyword] = 0;
+                }
+                keywordStats[occurrence.keyword]++;
+            });
+
+            // 生成汇总信息
+            let summaryHtml = `
+                <div class="summary-container">
+                    <h4>关键词匹配汇总 (点击关键词查看详细结果):</h4>
+            `;
+
+            for (const [keyword, count] of Object.entries(keywordStats)) {
+                summaryHtml += `
+                    <div class="summary-item" onclick="scrollToKeyword('${keyword}')">
+                        ${keyword} (${count})
+                    </div>
+                `;
+            }
+
+            summaryHtml += `</div>`;
+
             let html = `
                 <div class="success">
                     <h3>检查完成</h3>
@@ -518,13 +567,14 @@
                     </div>
                     <p>在文件中找到以下匹配项：</p>
                 </div>
+                ${summaryHtml}
                 <div class="result-container">
                     <div class="occurrences-grid">
             `;
 
-            filteredOccurrences.forEach(occurrence => {
+            filteredOccurrences.forEach((occurrence, index) => {
                 html += `
-                    <div class="occurrence">
+                    <div class="occurrence" id="keyword-${occurrence.keyword}-${index}">
                         <p><span class="keyword">${occurrence.keyword}</span></p>
                         <p><span class="page">页码: ${occurrence.page}</span></p>
                         <p class="context">${occurrence.context}</p>
@@ -537,6 +587,22 @@
                 </div>
             `;
             resultDiv.innerHTML = html;
+        }
+
+        // 滚动到指定关键词
+        function scrollToKeyword(keyword) {
+            // 找到第一个匹配的关键词元素
+            const element = document.querySelector(`[id^="keyword-${keyword}"]`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // 添加临时高亮效果
+                element.style.backgroundColor = '#fff3cd';
+                element.style.borderColor = '#ffc107';
+                setTimeout(() => {
+                    element.style.backgroundColor = '';
+                    element.style.borderColor = '';
+                }, 2000);
+            }
         }
 
         // 行政区划管理相关JavaScript代码
