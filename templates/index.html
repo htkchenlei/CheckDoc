@@ -643,10 +643,19 @@
             regionList.forEach(region => {
                 const regionElement = document.createElement('div');
                 regionElement.className = 'region-item';
-                regionElement.innerHTML = `
-                    ${region}
-                    <span class="delete-icon" onclick="showDeleteModal('${level}', '${region}')">×</span>
-                `;
+                
+                // 创建文本节点和删除图标
+                const textNode = document.createTextNode(region);
+                const deleteIcon = document.createElement('span');
+                deleteIcon.className = 'delete-icon';
+                deleteIcon.textContent = '×';
+                // 直接传递原始值，不需要额外的编码
+                deleteIcon.onclick = function() {
+                    showDeleteModal(level, region);
+                };
+                
+                regionElement.appendChild(textNode);
+                regionElement.appendChild(deleteIcon);
                 container.appendChild(regionElement);
             });
         }
@@ -713,8 +722,10 @@
 
         // 显示删除模态框
         function showDeleteModal(level, name) {
+            // 直接使用传入的值
             currentLevel = level;
             currentRegionName = name;
+            
             document.getElementById('delete-modal').style.display = 'block';
             document.getElementById('delete-password').value = '';
         }
@@ -732,14 +743,23 @@
                 return;
             }
 
-            fetch(`/api/regions/${currentLevel}/${currentRegionName}`, {
+            // 在发送请求前对URL路径进行编码
+            const encodedLevel = encodeURIComponent(currentLevel);
+            const encodedName = encodeURIComponent(currentRegionName);
+
+            fetch(`/api/regions/${encodedLevel}/${encodedName}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({password: password})
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     closeDeleteModal();
@@ -759,9 +779,21 @@
                                 // 显示成功消息
                                 alert('行政区划删除成功');
                             }
+                        })
+                        .catch(error => {
+                            console.error('Error reloading regions:', error);
+                            alert('删除完成，但刷新数据时出现问题');
                         });
                 } else {
                     alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (error.message) {
+                    alert('删除失败: ' + error.message);
+                } else {
+                    alert('删除过程中发生错误');
                 }
             });
         }
